@@ -4,10 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>单词接龙</title>
-  <style link="./index.css"></style>
+  <link rel="stylesheet" type="text/css" href="styles/index.css"></link>
 </head>
 <body>
-  
-  <script src="./index.js"></script>
+  <div class="start-page" >
+    <header>
+      <img src="images/title.jpeg" alt="">
+      <h1>英语单词接龙</h1>
+    </header>
+    <button type="button" class="start">开始游戏</button>
+    <section class="rules">
+      <h6>游戏规则</h6>
+      <ul>
+        <li>以上一个单词结尾字母开始</li>
+        <li>一场游戏中单词不能重复出现</li>
+        <li>每个接龙单词必须在规定时间内完成</li>
+      </ul>
+    </section>
+  </div>
+  <div class="game-page" style="display: none;">
+    <header class="clearfix">
+      <div class="score">5</div>
+      <div class="wrapper">
+        <div class="num">15</div>
+        <div class="left"></div>
+        <div class="right"></div>
+        <div class="rotate"></div>
+      </div>
+      <div class="achter"></div>
+    </header> 
+    <section class="main">
+      <ol id="word-chain">
+        
+      </ol>
+    </section>
+    <div class="input-wrapper">
+      <input type="text" id="answer-input">
+      <span class="arrow" id="answer-btn">&#8594;</span>
+    </div>
+    <footer>
+      所填单词要以上一单词结尾字母开头~
+    </footer>
+  </div>
+  <div class="end-modal" style="display: none;">
+    <div class="modal-header">
+      GAME OVER!
+    </div>
+    <div class="modal-content">
+      <div class="score">5</div>
+      <div>接龙长度</div>
+      <button id="restart">再玩一次</button>
+    </div>
+  </div>
+  <script src="src/RedBlackBST.js"></script>
+  <script src="src/index.js"></script>
 </body>
 </html>
