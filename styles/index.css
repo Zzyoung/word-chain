@@ -458,6 +458,7 @@ body {
   position: fixed;
   box-sizing: border-box;
   bottom:0;
+  left:0;
   height:180px;
   width:100%;
   padding-top: 4%;
