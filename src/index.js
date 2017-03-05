@@ -231,6 +231,9 @@ var dictionary = {
         e.preventDefault();
 
         if (containClass(target, 'del')) {
+          if (answer.length === 1) {
+            return ;
+          }
           answerInput.innerHTML = answer.substr(0, answer.length - 1);
           return;
         }
