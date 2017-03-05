@@ -87,7 +87,7 @@ var dictionary = {
         dictionary.reset();
 
         this.start();
-        answer('start', 'computer');
+        computer.answer(letters[new Date().getTime() % 25]);
         this.getScore();
       },
       startInterval: function() {
