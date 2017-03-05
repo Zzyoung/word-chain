@@ -24,7 +24,7 @@ var dictionary = {
   },
   reset: function () {
     for (var i = this.wordChain.length - 1; i >= 0; i--) {
-      this.data.put(this.wordChain[i]);
+      this.data.put(this.wordChain[i], this.wordChain[i]);
     }
     this.wordChain = [];
   }
