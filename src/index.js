@@ -206,9 +206,28 @@ var dictionary = {
         }
       };
 
-      keyboard.onclick = function (e) {
+      // keyboard.onclick = function (e) {
+      //   var target = e.target;  
+      //   var answer = answerInput.innerHTML;
+
+      //   if (containClass(target, 'del')) {
+      //     answerInput.innerHTML = answer.substr(0, answer.length - 1);
+      //     return;
+      //   }
+
+      //   if (target.tagName.toLowerCase() === 'span') {
+      //     var letter = target.innerHTML;
+          
+      //     if (/^[a-z]{1}$/.test(letter)) {
+      //       answerInput.innerHTML = answerInput.innerHTML + letter;
+      //     }
+      //   }
+      // }
+
+      keyboard.addEventListener('touchstart', function (e) {
         var target = e.target;  
         var answer = answerInput.innerHTML;
+        e.preventDefault();
 
         if (containClass(target, 'del')) {
           answerInput.innerHTML = answer.substr(0, answer.length - 1);
@@ -222,7 +241,7 @@ var dictionary = {
             answerInput.innerHTML = answerInput.innerHTML + letter;
           }
         }
-      }
+      }, false)
     }
 
     function initGame () {
