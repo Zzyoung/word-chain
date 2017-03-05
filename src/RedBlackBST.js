@@ -27,7 +27,7 @@ function min(node) {
 }
 
 function isRed (node) {
-    if (node == null) return false;
+    if (node === null) return false;
     return node.color === RED;
 }
 
@@ -54,12 +54,12 @@ function rotateRight (node) {
 }
 
 function flipColors (node) {
-    node.color = RED;
+    node.color = !node.color;
     if (node.left !== null) {
-        node.left.color = BLACK;
+        node.left.color = !node.left.color;
     }
     if (node.right !== null) {
-        node.right.color = BLACK;
+        node.right.color = !node.right.color;
     }
 }
 
@@ -67,6 +67,7 @@ function put (node, key, val) {
     if (node == null) {
         return new Node(key, val, 1, RED);
     }
+
     var cmp = compareTo(key, node.key);
     if (cmp < 0) {
         node.left = put(node.left, key, val);
@@ -119,10 +120,9 @@ function get (node, key) {
 
 function moveRedLeft (node) {
     flipColors(node);
-    if (isRed(node.right.left)) {
+    if (node.right !== null && isRed(node.right.left)) {
         node.right = rotateRight(node.right);
         node = rotateLeft(node);
-        flipColors(node);
     }
     return node;
 }
@@ -208,6 +208,10 @@ function getByFirstLetter(node, prefix) {
     }
 }
 
+RedBlackBST.prototype.size = function () {
+    return size(this.root);
+}
+
 RedBlackBST.prototype.isEmpty = function () {
     return size(this.root) === 0;
 }
@@ -222,7 +226,7 @@ RedBlackBST.prototype.get = function (key) {
 }
 
 RedBlackBST.prototype.deleteMin = function () {
-    if (!isRed(this.root.left) && !isRed(this.root.right)) {
+    if ((!isRed(this.root.left)) && (!isRed(this.root.right))) {
         this.root.color = RED;
     }
     this.root = deleteMin(this.root);
