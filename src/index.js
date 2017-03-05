@@ -31,7 +31,7 @@ var dictionary = {
 };
 (function () {
     'use strict';
-    
+    var letters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
     var wordChainDom = null;
     var startBtn = null;
     var answerBtn = null;
@@ -161,7 +161,8 @@ var dictionary = {
         gamePage.style.display = 'block';
 
         game.start();
-        answer('start', 'computer');
+        // answer('start', 'computer');
+        computer.answer(letters[new Date().getTime() % 25]);
         game.getScore();
       }
 
