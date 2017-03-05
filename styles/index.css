@@ -480,6 +480,13 @@ body {
   font-size: 20px;
   box-shadow: 0 2px 2px 0 rgba(0,0,0,.18);
   background-color: #fff;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0); 
+  -webkit-user-select: none;
+  -moz-user-focus: none;
+  -moz-user-select: none;
+  -webkit-appearance:none;
+  outline: none;
+  border: none;
 }
 
 #keyboard span:first-child {
