@@ -21,6 +21,11 @@ var dictionary = {
   },
   size: function () {
     return this.data.size();
+  },
+  reset: function () {
+    for (var i = this.wordChain.length - 1; i >= 0; i--) {
+      this.data.put(this.wordChain[i]);
+    }
   }
 };
 (function () {
@@ -30,8 +35,11 @@ var dictionary = {
     var startBtn = null;
     var answerBtn = null;
     var answerInput = null;
+    var answerWrapper = null;
     var wordChainWrapper = null;
     var errorMsgDom = null;
+    var gamePageDom = null;
+    var keyboard = null;
     var game = {
       scoreDom: null,
       timerDom: {
@@ -65,6 +73,7 @@ var dictionary = {
         addClass(this.timerDom.timerWrapper, 'paused');
       },
       start: function() {
+        hideError();
         this.timeStart();
         this.startInterval();
       },
@@ -74,6 +83,7 @@ var dictionary = {
         this.cycle = this.defaultCycle;
         this.scoreDom.innerHTML = 0;
         wordChainDom.innerHTML = '';
+        dictionary.reset();
 
         this.start();
         answer('start', 'computer');
@@ -96,6 +106,7 @@ var dictionary = {
         
         this.endModal.querySelector('.score').innerHTML = this.score;
         this.endModal.style.display = 'block';
+        addClass(keyboard, 'hide');
       },
       playerWin: function () {
         this.timePause();
@@ -134,9 +145,12 @@ var dictionary = {
       startBtn = document.querySelector('.start');
       answerBtn = document.querySelector('#answer-btn');
       answerInput = document.querySelector('#answer-input');
+      answerWrapper = document.querySelector('#answer-wrapper');
       wordChainDom = document.querySelector('#word-chain');
       wordChainWrapper = document.querySelector('.main');
       errorMsgDom = document.querySelector('#error-msg');
+      gamePageDom = document.querySelector('.game-page');
+      keyboard = document.querySelector('#keyboard');
       initGame();
 
       startBtn.onclick = function () {
@@ -151,7 +165,7 @@ var dictionary = {
       }
 
       answerBtn.onclick = function () {
-        var word = answerInput.value;
+        var word = answerInput.innerHTML;
         var isRepeat = dictionary.isRepeat(word);
         if (isRepeat) {
           showError('这个单词已经出现过了');
@@ -172,10 +186,42 @@ var dictionary = {
           computer.answer(word.slice(word.length - 1));
         },150);
         game.timeStart();
-      }
+      };
 
       document.querySelector('#restart').onclick = function () {
         game.restart();
+      };
+
+      gamePageDom.onclick = function (e) {
+        var target = e.target;
+
+        if (target.getAttribute('id') === 'answer-wrapper') {
+          addClass(answerWrapper, 'focus');
+          removeClass(keyboard, 'hide');
+        } else if(target.getAttribute('id') === 'answer-btn'){
+          addClass(answerWrapper, 'focus');
+        } else {
+          removeClass(answerWrapper, 'focus');
+          addClass(keyboard, 'hide');
+        }
+      };
+
+      keyboard.onclick = function (e) {
+        var target = e.target;  
+        var answer = answerInput.innerHTML;
+
+        if (containClass(target, 'del')) {
+          answerInput.innerHTML = answer.substr(0, answer.length - 1);
+          return;
+        }
+
+        if (target.tagName.toLowerCase() === 'span') {
+          var letter = target.innerHTML;
+          
+          if (/^[a-z]{1}$/.test(letter)) {
+            answerInput.innerHTML = answerInput.innerHTML + letter;
+          }
+        }
       }
     }
 
@@ -215,7 +261,7 @@ var dictionary = {
       scrollDown(wordChainWrapper, 0, 0.4);
       
       if (player === 'computer') {
-        answerInput.value = word.slice(word.length - 1);
+        answerInput.innerHTML = word.slice(word.length - 1);
         answerInput.focus();
       }
     }
