@@ -1,3 +1,11 @@
+window.requestAnimationFrame = (function(){
+  return  window.requestAnimationFrame       ||
+          window.webkitRequestAnimationFrame ||
+          window.mozRequestAnimationFrame    ||
+          function( callback ){
+            window.setTimeout(callback, 1000 / 60);
+          };
+})();
 var dictionary = {
   data: new RedBlackBST(),
   wordChain: [],
@@ -74,6 +82,8 @@ var dictionary = {
         addClass(this.timerDom.timerWrapper, 'paused');
       },
       start: function() {
+        document.querySelector('.start-page').style.display = 'none';
+        document.querySelector('.game-page').style.display = 'block';
         hideError();
         this.timeStart();
         this.startInterval();
@@ -117,6 +127,7 @@ var dictionary = {
       }
     };
     var computer = {
+      memory: new RedBlackBST(),
       answer: function (first) {
         var word = dictionary.getByFirstLetter(first);
 
@@ -128,43 +139,15 @@ var dictionary = {
         answer(word, 'computer');
         game.getScore();
         game.timeStart();
+      },
+      getByFirstLetter: function (argument) {
+        var result = this.memory.getByFirstLetter(prefix);
+        this.memory.remove(result);
+        return result;
       }
     };
-    initDictionary(dictionary.data);
-
-    window.requestAnimationFrame = (function(){
-      return  window.requestAnimationFrame       ||
-              window.webkitRequestAnimationFrame ||
-              window.mozRequestAnimationFrame    ||
-              function( callback ){
-                window.setTimeout(callback, 1000 / 60);
-              };
-    })();
-
-    window.onload = function () {
-      startBtn = document.querySelector('.start');
-      answerBtn = document.querySelector('#answer-btn');
-      answerInput = document.querySelector('#answer-input');
-      answerWrapper = document.querySelector('#answer-wrapper');
-      wordChainDom = document.querySelector('#word-chain');
-      wordChainWrapper = document.querySelector('.main');
-      errorMsgDom = document.querySelector('#error-msg');
-      gamePageDom = document.querySelector('.game-page');
-      keyboard = document.querySelector('#keyboard');
-      initGame();
-
-      startBtn.onclick = function () {
-        var startPage = document.querySelector('.start-page');
-        var gamePage = document.querySelector('.game-page');
-        startPage.style.display = 'none';
-        gamePage.style.display = 'block';
-
-        game.start();
-        // answer('start', 'computer');
-        computer.answer(letters[new Date().getTime() % 25]);
-      }
-
-      answerBtn.onclick = function () {
+    var player = {
+      answer: function() {
         var word = answerInput.innerHTML;
         var isRepeat = dictionary.isRepeat(word);
         if (isRepeat) {
@@ -186,11 +169,62 @@ var dictionary = {
           computer.answer(word.slice(word.length - 1));
         },150);
         game.timeStart();
+      },
+      writeAnswer: function (button) {
+        var answer = answerInput.innerHTML;
+
+        if (containClass(button, 'del')) {
+          if (answer.length === 1) {
+            return ;
+          }
+          answerInput.innerHTML = answer.substr(0, answer.length - 1);
+          return;
+        }
+
+        if (button.tagName.toLowerCase() === 'span') {
+          var letter = button.innerHTML;
+          
+          if (/^[a-z]{1}$/.test(letter)) {
+            answerInput.innerHTML = answerInput.innerHTML + letter;
+          }
+        }
+      }
+    }
+    initDictionary(dictionary.data);
+    initDictionary(computer.memory);
+
+    window.onload = function () {
+      startBtn = document.querySelector('.start');
+      answerBtn = document.querySelector('#answer-btn');
+      answerInput = document.querySelector('#answer-input');
+      answerWrapper = document.querySelector('#answer-wrapper');
+      wordChainDom = document.querySelector('#word-chain');
+      wordChainWrapper = document.querySelector('.main');
+      errorMsgDom = document.querySelector('#error-msg');
+      gamePageDom = document.querySelector('.game-page');
+      keyboard = document.querySelector('#keyboard');
+      initGame();
+
+      startBtn.onclick = function () {
+        game.start();
+        // answer('start', 'computer');
+        computer.answer(letters[new Date().getTime() % 25]);
+      }
+
+      answerBtn.onclick = function () {
+        player.answer();
       };
 
       document.querySelector('#restart').onclick = function () {
         game.restart();
       };
+
+      keyboard.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        var target = e.target;  
+        
+        player.writeAnswer(target);
+      }, false);
 
       gamePageDom.onclick = function (e) {
         var target = e.target;
@@ -205,28 +239,6 @@ var dictionary = {
           addClass(keyboard, 'hide');
         }
       };
-
-      keyboard.addEventListener('touchstart', function (e) {
-        var target = e.target;  
-        var answer = answerInput.innerHTML;
-        e.preventDefault();
-
-        if (containClass(target, 'del')) {
-          if (answer.length === 1) {
-            return ;
-          }
-          answerInput.innerHTML = answer.substr(0, answer.length - 1);
-          return;
-        }
-
-        if (target.tagName.toLowerCase() === 'span') {
-          var letter = target.innerHTML;
-          
-          if (/^[a-z]{1}$/.test(letter)) {
-            answerInput.innerHTML = answerInput.innerHTML + letter;
-          }
-        }
-      }, false)
     }
 
     function initGame () {
@@ -249,7 +261,7 @@ var dictionary = {
       errorMsgDom.style.visibility = 'hidden';
     }
 
-    function answer (word, player) {
+    function addNewWordInChain (word) {
       var li = document.createElement('li');
       var span = document.createElement('span');
       var em = document.createElement('em');
@@ -261,8 +273,11 @@ var dictionary = {
       div.setAttribute('class','pass');
       li.appendChild(div);
       wordChainDom.appendChild(li);
-
       scrollDown(wordChainWrapper, 0, 0.4);
+    }
+
+    function answer (word, player) {
+      addNewWordInChain(word);
       
       if (player === 'computer') {
         answerInput.innerHTML = word.slice(word.length - 1);
