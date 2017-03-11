@@ -88,7 +88,6 @@ var dictionary = {
 
         this.start();
         computer.answer(letters[new Date().getTime() % 25]);
-        this.getScore();
       },
       startInterval: function() {
         var self = this;
@@ -163,7 +162,6 @@ var dictionary = {
         game.start();
         // answer('start', 'computer');
         computer.answer(letters[new Date().getTime() % 25]);
-        game.getScore();
       }
 
       answerBtn.onclick = function () {
@@ -207,24 +205,6 @@ var dictionary = {
           addClass(keyboard, 'hide');
         }
       };
-
-      // keyboard.onclick = function (e) {
-      //   var target = e.target;  
-      //   var answer = answerInput.innerHTML;
-
-      //   if (containClass(target, 'del')) {
-      //     answerInput.innerHTML = answer.substr(0, answer.length - 1);
-      //     return;
-      //   }
-
-      //   if (target.tagName.toLowerCase() === 'span') {
-      //     var letter = target.innerHTML;
-          
-      //     if (/^[a-z]{1}$/.test(letter)) {
-      //       answerInput.innerHTML = answerInput.innerHTML + letter;
-      //     }
-      //   }
-      // }
 
       keyboard.addEventListener('touchstart', function (e) {
         var target = e.target;  
