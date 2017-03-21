@@ -73,7 +73,7 @@ var dictionary = {
         removeClass(this.timerDom.timerWrapper, 'paused');
         setTimeout(function() {
           removeClass(self.timerDom.timerWrapper,'no-animation');
-        },50);
+        },20);
         this.timerDom.num.innerHTML = this.defaultCycle;
         this.cycle = this.defaultCycle;
         this.startInterval();
