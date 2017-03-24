@@ -1,3 +1,6 @@
+import {RedBlackBST} from './RedBlackBST';
+require('style-loader!css-loader!../styles/index.css');
+
 window.requestAnimationFrame = (function(){
   return  window.requestAnimationFrame       ||
           window.webkitRequestAnimationFrame ||

@@ -1,4 +1,4 @@
-function RedBlackBST () {
+export function RedBlackBST () {
     this.root = null;
 }
 
