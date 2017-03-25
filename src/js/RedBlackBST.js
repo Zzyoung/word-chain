@@ -1,4 +1,4 @@
-export function RedBlackBST () {
+export default function RedBlackBST () {
     this.root = null;
 }
 
