@@ -1,5 +1,6 @@
 import {RedBlackBST} from './RedBlackBST';
-require('style-loader!css-loader!../styles/index.css');
+import '../styles/index.css';
+import wordTemplate from '../template/word.tpl';
 
 window.requestAnimationFrame = (function(){
   return  window.requestAnimationFrame       ||
@@ -266,15 +267,8 @@ var dictionary = {
 
     function addNewWordInChain (word) {
       var li = document.createElement('li');
-      var span = document.createElement('span');
-      var em = document.createElement('em');
-      var div = document.createElement('div');
-      em.innerHTML = word.slice(word.length - 1);
-      span.innerHTML = word.slice(0, word.length - 1);
-      span.appendChild(em);
-      li.appendChild(span);
-      div.setAttribute('class','pass');
-      li.appendChild(div);
+      var innerHtml = wordTemplate({word:word});
+      li.innerHTML = innerHtml;
       wordChainDom.appendChild(li);
       scrollDown(wordChainWrapper, 0, 0.4);
     }
