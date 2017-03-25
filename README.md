@@ -1,4 +1,4 @@
 # word-chain
 A word chain game.
 
-Tries to play：https://zzyoung.github.io/word-chain/
+Tries to play：https://zzyoung.github.io/word-chain/dist/index.html
