@@ -7,12 +7,13 @@ function Dictionary () {
 
 Dictionary.prototype.getByFirstLetter = function (prefix) {
   var result = this.data.getByFirstLetter(prefix);
-  this.data.remove(result);
   return result;
 }
 
 Dictionary.prototype.remove = function (word) {
-  this.data.remove(word);
+  if (this.get(word)) {
+    this.data.remove(word);
+  }
 }
 
 Dictionary.prototype.get = function (word) {

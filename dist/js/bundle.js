@@ -171,12 +171,13 @@ function Dictionary() {
 
 Dictionary.prototype.getByFirstLetter = function (prefix) {
   var result = this.data.getByFirstLetter(prefix);
-  this.data.remove(result);
   return result;
 };
 
 Dictionary.prototype.remove = function (word) {
-  this.data.remove(word);
+  if (this.get(word)) {
+    this.data.remove(word);
+  }
 };
 
 Dictionary.prototype.get = function (word) {
@@ -544,6 +545,10 @@ var _Dictionary = __webpack_require__(1);
 
 var _Dictionary2 = _interopRequireDefault(_Dictionary);
 
+var _word = __webpack_require__(15);
+
+var _word2 = _interopRequireDefault(_word);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var letters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
@@ -553,7 +558,6 @@ exports.default = {
   errorMsgDom: null,
   wordChainDom: null,
   wordChainWrapper: null,
-  answerInput: null,
   timerDom: {
     timerWrapper: null,
     num: null,
@@ -568,14 +572,48 @@ exports.default = {
   jsTimer: null,
   wordChain: [],
   validate: function validate(word) {
-    console.dir(_Dictionary2.default.data);
+    if (!word) {
+      return false;
+    }
     var search = _Dictionary2.default.get(word);
     var validate = search === word;
     if (validate) {
-      this.wordChain.push(word);
       _Dictionary2.default.remove(word);
     }
     return validate;
+  },
+  answer: function answer(word, player) {
+    var self = this;
+    var validate = this.validate(word);
+    if (!validate) {
+      this.showError('呀，拼错了！');
+      return false;
+    }
+
+    var isRepeat = this.isRepeat(word);
+    if (isRepeat) {
+      this.showError('这个单词已经出现过了');
+      return false;
+    }
+
+    this.addNewWordInChain(word);
+    this.hideError();
+    this.timePause();
+    this.getScore();
+    if (player === 'computer') {
+      this.fire('nextRound-player', word);
+    } else {
+      this.fire('nextRound-computer', word);
+    }
+    this.timeStart();
+  },
+  addNewWordInChain: function addNewWordInChain(word) {
+    this.wordChain.push(word);
+    var li = document.createElement('li');
+    var innerHtml = (0, _word2.default)({ word: word });
+    li.innerHTML = innerHtml;
+    this.wordChainDom.appendChild(li);
+    _utils2.default.scrollDown(this.wordChainWrapper, 0, 0.4);
   },
   isRepeat: function isRepeat(word) {
     return this.wordChain.indexOf(word) >= 0;
@@ -604,12 +642,13 @@ exports.default = {
   timePause: function timePause() {
     _utils2.default.addClass(this.timerDom.timerWrapper, 'paused');
   },
-  start: function start() {
+  start: function start(config) {
     document.querySelector('.start-page').style.display = 'none';
     document.querySelector('.game-page').style.display = 'block';
     this.hideError();
     this.timeStart();
     this.startInterval();
+    this.fire('nextRound-computer', letters[new Date().getTime() % 25]);
   },
   restart: function restart() {
     this.endModal.style.display = 'none';
@@ -620,7 +659,6 @@ exports.default = {
     this.reset();
 
     this.start();
-    this.computer.answer(letters[new Date().getTime() % 25]);
   },
   startInterval: function startInterval() {
     var self = this;
@@ -680,74 +718,33 @@ var _Dictionary = __webpack_require__(1);
 
 var _Dictionary2 = _interopRequireDefault(_Dictionary);
 
-var _utils = __webpack_require__(0);
-
-var _utils2 = _interopRequireDefault(_utils);
-
-var _word = __webpack_require__(5);
-
-var _word2 = _interopRequireDefault(_word);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function addNewWordInChain(word) {
-  var li = document.createElement('li');
-  var innerHtml = (0, _word2.default)({ word: word });
-  li.innerHTML = innerHtml;
-  _game2.default.wordChainDom.appendChild(li);
-  _utils2.default.scrollDown(_game2.default.wordChainWrapper, 0, 0.4);
+function Computer() {
+  this.memory = null;
 }
 
-function _answer(word, player) {
-  addNewWordInChain(word);
+Computer.prototype.ready = function (preWord) {
+  var self = this;
+  setTimeout(function () {
+    self.response(preWord.slice(preWord.length - 1));
+  }, 150);
+};
 
-  if (player === 'computer') {
-    _game2.default.answerInput.innerHTML = word.slice(word.length - 1);
-    _game2.default.answerInput.focus();
-  }
-}
+Computer.prototype.response = function (firstLetter) {
+  var word = _Dictionary2.default.getByFirstLetter(firstLetter);
 
-exports.default = {
-  memory: new _RedBlackBST2.default(),
-  answer: function answer(first) {
-    var word = _Dictionary2.default.getByFirstLetter(first);
-    _game2.default.wordChain.push(word);
-    if (word === null) {
-      _game2.default.playerWin();
-    }
+  var failed = _game2.default.answer(word, 'computer');
 
-    _game2.default.timePause();
-    _answer(word, 'computer');
-    _game2.default.getScore();
-    _game2.default.timeStart();
-  },
-  getByFirstLetter: function getByFirstLetter(argument) {
-    var result = this.memory.getByFirstLetter(prefix);
-    this.memory.remove(result);
-    return result;
+  if (failed) {
+    _game2.default.playerWin();
   }
 };
 
+exports.default = Computer;
+
 /***/ }),
 /* 5 */
-/***/ (function(module, exports) {
-
-module.exports = function (obj) {
-obj || (obj = {});
-var __t, __p = '';
-with (obj) {
-__p += '<span>' +
-((__t = ( word.slice(0, word.length - 1))) == null ? '' : __t) +
-'<em>' +
-((__t = ( word.slice(word.length - 1))) == null ? '' : __t) +
-'</em></span>\n<div class="pass"></div>';
-
-}
-return __p
-}
-
-/***/ }),
-/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -765,73 +762,106 @@ var _utils = __webpack_require__(0);
 
 var _utils2 = _interopRequireDefault(_utils);
 
-var _computer = __webpack_require__(4);
+var _keyboard = __webpack_require__(9);
 
-var _computer2 = _interopRequireDefault(_computer);
-
-var _word = __webpack_require__(5);
-
-var _word2 = _interopRequireDefault(_word);
+var _keyboard2 = _interopRequireDefault(_keyboard);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function addNewWordInChain(word) {
-  var li = document.createElement('li');
-  var innerHtml = (0, _word2.default)({ word: word });
-  li.innerHTML = innerHtml;
-  _game2.default.wordChainDom.appendChild(li);
-  _utils2.default.scrollDown(_game2.default.wordChainWrapper, 0, 0.4);
-}
+var answerBtn = {
+  init: function init(onClick) {
+    var answerBtn = document.querySelector('#answer-btn');
 
-function _answer(word, player) {
-  addNewWordInChain(word);
-
-  if (player === 'computer') {
-    _game2.default.answerInput.innerHTML = word.slice(word.length - 1);
-    _game2.default.answerInput.focus();
+    answerBtn.onclick = function () {
+      onClick();
+    };
   }
+};
+
+function Player() {
+  this.word = '';
+  this.answerInput = document.querySelector('#answer-input');
+
+  answerBtn.init(this.response.bind(this));
+  _keyboard2.default.init(this.writeAnswer.bind(this));
 }
 
-exports.default = {
-  answer: function answer() {
-    var word = _game2.default.answerInput.innerHTML;
-    var isRepeat = _game2.default.isRepeat(word);
-    if (isRepeat) {
-      _game2.default.showError('这个单词已经出现过了');
-      return;
-    }
+Player.prototype.response = function () {
+  var failed = _game2.default.answer(this.word, 'player');
+};
 
-    var validate = _game2.default.validate(word);
-    if (!validate) {
-      _game2.default.showError('呀，拼错了！');
-      return;
-    }
+Player.prototype.writeAnswer = function (answer) {
+  this.word = answer;
+  this.answerInput.innerHTML = answer;
+};
 
-    _game2.default.hideError();
-    _game2.default.timePause();
-    _answer(word, 'player');
-    _game2.default.getScore();
-    setTimeout(function () {
-      _computer2.default.answer(word.slice(word.length - 1));
-    }, 150);
-    _game2.default.timeStart();
+Player.prototype.ready = function (preWord) {
+  var firstLetter = preWord.slice(preWord.length - 1);
+  this.answerInput.innerHTML = firstLetter;
+  this.answerInput.focus();
+  _keyboard2.default.update(firstLetter);
+};
+
+exports.default = Player;
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+exports.default = function (o) {
+  var i;
+  for (i in publisher) {
+    if (publisher.hasOwnProperty(i) && typeof publisher[i] === 'function') {
+      o[i] = publisher[i];
+    }
+  }
+  o.subscribers = { any: [] };
+};
+
+var publisher = {
+  subscribers: {
+    'any': []
   },
-  writeAnswer: function writeAnswer(button) {
-    var answer = _game2.default.answerInput.innerHTML;
+  on: function on(type, fn, context) {
+    type = type || 'any';
+    fn = typeof fn === 'function' ? fn : context[fn];
 
-    if (_utils2.default.containClass(button, 'del')) {
-      if (answer.length === 1) {
-        return;
-      }
-      _game2.default.answerInput.innerHTML = answer.substr(0, answer.length - 1);
-      return;
+    // 如果不存在订阅类型，则创建一个新的
+    if (typeof this.subscribers[type] === 'undefined') {
+      this.subscribers[type] = [];
     }
+    this.subscribers[type].push({
+      fn: fn,
+      context: context || this
+    });
+  },
+  remove: function remove(type, fn, context) {
+    this.visitSubscribers('unsubscribe', type, fn, context);
+  },
+  fire: function fire(type, publication) {
+    this.visitSubscribers('publish', type, publication);
+  },
+  visitSubscribers: function visitSubscribers(action, type, arg, context) {
+    var pubtype = type || 'any',
+        subscribers = this.subscribers[pubtype],
+        i,
+        max = subscribers ? subscribers.length : 0;
 
-    if (button.tagName.toLowerCase() === 'span') {
-      var letter = button.innerHTML;
-
-      if (/^[a-z]{1}$/.test(letter)) {
-        _game2.default.answerInput.innerHTML = _game2.default.answerInput.innerHTML + letter;
+    for (i = 0; i < max; i++) {
+      if (action === 'publish') {
+        subscribers[i].fn.call(subscribers[i].context, arg);
+      } else {
+        // 从subscribers中移除监听函数
+        if (subscribers[i].fn === arg && subscribers[i].context === context) {
+          subscribers.splice(i, 1);
+        }
       }
     }
   }
@@ -844,10 +874,10 @@ exports.default = {
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(11);
+var content = __webpack_require__(12);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, {});
+var update = __webpack_require__(18)(content, {});
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -892,21 +922,18 @@ var _computer = __webpack_require__(4);
 
 var _computer2 = _interopRequireDefault(_computer);
 
-var _player = __webpack_require__(6);
+var _player = __webpack_require__(5);
 
 var _player2 = _interopRequireDefault(_player);
+
+var _publisher = __webpack_require__(6);
+
+var _publisher2 = _interopRequireDefault(_publisher);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 (function () {
   'use strict';
-
-  var letters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
-  var startBtn = null;
-  var answerBtn = null;
-  var answerWrapper = null;
-  var gamePageDom = null;
-  var keyboard = null;
 
   function initGame() {
     _game2.default.scoreDom = document.querySelector('.score');
@@ -920,41 +947,95 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
     _game2.default.errorMsgDom = document.querySelector('#error-msg');
     _game2.default.wordChainDom = document.querySelector('#word-chain');
     _game2.default.wordChainWrapper = document.querySelector('.main');
-    _game2.default.answerInput = document.querySelector('#answer-input');
 
-    _game2.default.computer = _computer2.default;
+    var player = new _player2.default();
+    var computer = new _computer2.default();
+    (0, _publisher2.default)(_game2.default);
+
+    _game2.default.on('nextRound-computer', 'ready', computer);
+    _game2.default.on('nextRound-player', 'ready', player);
   }
 
   window.onload = function () {
-    startBtn = document.querySelector('.start');
-    answerBtn = document.querySelector('#answer-btn');
-    answerWrapper = document.querySelector('#answer-wrapper');
-    gamePageDom = document.querySelector('.game-page');
-    keyboard = document.querySelector('#keyboard');
+    var startBtn = document.querySelector('.start');
+
     initGame();
 
     startBtn.onclick = function () {
       _game2.default.start();
-      // answer('start', 'computer');
-      _computer2.default.answer(letters[new Date().getTime() % 25]);
-    };
-
-    answerBtn.onclick = function () {
-      _player2.default.answer();
     };
 
     document.querySelector('#restart').onclick = function () {
       _game2.default.restart();
     };
+  };
+})();
 
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _utils = __webpack_require__(0);
+
+var _utils2 = _interopRequireDefault(_utils);
+
+var _keyboard = __webpack_require__(14);
+
+var _keyboard2 = _interopRequireDefault(_keyboard);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = {
+  value: '',
+  init: function init(onChange) {
+    var self = this;
+    var gamePage = document.querySelector('.game-page');
+    var answerWrapper = document.querySelector('#answer-wrapper');
+    // create DOM
+    var keyboard = document.createElement('div');
+    keyboard.setAttribute('id', 'keyboard');
+    keyboard.setAttribute('class', 'hide');
+    keyboard.innerHTML = (0, _keyboard2.default)();
+    document.body.appendChild(keyboard);
+
+    // bind event
     keyboard.addEventListener('touchstart', function (e) {
       e.preventDefault();
-      var target = e.target;
+      var button = e.target;
+      var answer = self.value;
 
-      _player2.default.writeAnswer(target);
+      if (_utils2.default.containClass(button, 'del')) {
+        if (answer.length === 1) {
+          return;
+        }
+
+        var newAnswer = answer.substr(0, answer.length - 1);
+        self.value = newAnswer;
+        onChange(newAnswer);
+        return;
+      }
+
+      if (button.tagName.toLowerCase() === 'span') {
+        var letter = button.innerHTML;
+
+        if (/^[a-z]{1}$/.test(letter)) {
+          var newAnswer = answer + letter;
+          self.value = newAnswer;
+          onChange(newAnswer);
+        }
+      }
     }, false);
 
-    gamePageDom.onclick = function (e) {
+    // click other place hide keyboard
+    // click #answer-wrapper show keyboard
+    gamePage.onclick = function (e) {
       var target = e.target;
 
       if (target.getAttribute('id') === 'answer-wrapper') {
@@ -967,11 +1048,16 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
         _utils2.default.addClass(keyboard, 'hide');
       }
     };
-  };
-})();
+
+    return keyboard;
+  },
+  update: function update(value) {
+    this.value = value;
+  }
+};
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1092,7 +1178,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1106,9 +1192,9 @@ function fromByteArray (uint8) {
 
 
 
-var base64 = __webpack_require__(9)
-var ieee754 = __webpack_require__(13)
-var isArray = __webpack_require__(14)
+var base64 = __webpack_require__(10)
+var ieee754 = __webpack_require__(16)
+var isArray = __webpack_require__(17)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -2886,13 +2972,13 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(17)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(12)(undefined);
+exports = module.exports = __webpack_require__(13)(undefined);
 // imports
 
 
@@ -2903,7 +2989,7 @@ exports.push([module.i, "\n* {\n  margin: 0;\n  padding: 0;\n}\n\nhtml {\n  widt
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*
@@ -2982,10 +3068,42 @@ function toComment(sourceMap) {
   return '/*# ' + data + ' */';
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11).Buffer))
 
 /***/ }),
-/* 13 */
+/* 14 */
+/***/ (function(module, exports) {
+
+module.exports = function (obj) {
+obj || (obj = {});
+var __t, __p = '';
+with (obj) {
+__p += '<div class="first-line clearfix">\n  <span>q</span>\n  <span>w</span>\n  <span>e</span>\n  <span>r</span>\n  <span>t</span>\n  <span>y</span>\n  <span>u</span>\n  <span>i</span>\n  <span>o</span>\n  <span>p</span>\n</div>\n<div class="second-line clearfix">\n  <span>a</span>\n  <span>s</span>\n  <span>d</span>\n  <span>f</span>\n  <span>g</span>\n  <span>h</span>\n  <span>j</span>\n  <span>k</span>\n  <span>l</span>\n</div>\n<div class="third-line clearfix">\n  <span>z</span>\n  <span>x</span>\n  <span>c</span>\n  <span>v</span>\n  <span>b</span>\n  <span>n</span>\n  <span>m</span>\n  <span class="del">删除</span>\n</div>';
+
+}
+return __p
+}
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports) {
+
+module.exports = function (obj) {
+obj || (obj = {});
+var __t, __p = '';
+with (obj) {
+__p += '<span>' +
+((__t = ( word.slice(0, word.length - 1))) == null ? '' : __t) +
+'<em>' +
+((__t = ( word.slice(word.length - 1))) == null ? '' : __t) +
+'</em></span>\n<div class="pass"></div>';
+
+}
+return __p
+}
+
+/***/ }),
+/* 16 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -3075,7 +3193,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 14 */
+/* 17 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -3086,7 +3204,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 15 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -3123,7 +3241,7 @@ var stylesInDom = {},
 	singletonElement = null,
 	singletonCounter = 0,
 	styleElementsInsertedAtTop = [],
-	fixUrls = __webpack_require__(16);
+	fixUrls = __webpack_require__(19);
 
 module.exports = function(list, options) {
 	if(typeof DEBUG !== "undefined" && DEBUG) {
@@ -3382,7 +3500,7 @@ function updateLink(linkElement, options, obj) {
 
 
 /***/ }),
-/* 16 */
+/* 19 */
 /***/ (function(module, exports) {
 
 
@@ -3477,7 +3595,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 17 */
+/* 20 */
 /***/ (function(module, exports) {
 
 var g;

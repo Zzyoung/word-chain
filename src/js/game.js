@@ -1,14 +1,14 @@
 import utils from './utils.js';
 import dictionary from './Dictionary.js';
+import wordTemplate from '../template/word.tpl';
 
 var letters = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
-    
+
 export default {
   scoreDom: null,
   errorMsgDom: null,
   wordChainDom: null,
   wordChainWrapper: null,
-  answerInput: null,
   timerDom: {
     timerWrapper: null,
     num: null,
@@ -23,13 +23,48 @@ export default {
   jsTimer: null,
   wordChain: [],
   validate: function (word) {
+    if (!word) {
+      return false;
+    }
     var search = dictionary.get(word);
     var validate = search === word;
     if (validate) {
-      this.wordChain.push(word);
       dictionary.remove(word);
     }
     return validate;
+  },
+  answer: function (word, player) {
+    var self = this;
+    var validate = this.validate(word);
+    if (!validate) {
+      this.showError('呀，拼错了！');
+      return false;
+    }
+
+    var isRepeat = this.isRepeat(word);
+    if (isRepeat) {
+      this.showError('这个单词已经出现过了');
+      return false;
+    }
+    
+    this.addNewWordInChain(word);
+    this.hideError();
+    this.timePause();
+    this.getScore();
+    if (player === 'computer') {
+      this.fire('nextRound-player',word);
+    } else {
+      this.fire('nextRound-computer',word);
+    }
+    this.timeStart();
+  },
+  addNewWordInChain: function (word) {
+    this.wordChain.push(word);
+    var li = document.createElement('li');
+    var innerHtml = wordTemplate({word:word});
+    li.innerHTML = innerHtml;
+    this.wordChainDom.appendChild(li);
+    utils.scrollDown(this.wordChainWrapper, 0, 0.4);
   },
   isRepeat: function (word) {
     return this.wordChain.indexOf(word) >= 0;
@@ -58,12 +93,13 @@ export default {
   timePause: function () {
     utils.addClass(this.timerDom.timerWrapper, 'paused');
   },
-  start: function() {
+  start: function(config) {
     document.querySelector('.start-page').style.display = 'none';
     document.querySelector('.game-page').style.display = 'block';
     this.hideError();
     this.timeStart();
     this.startInterval();
+    this.fire('nextRound-computer', letters[new Date().getTime() % 25]);
   },
   restart: function () {
     this.endModal.style.display = 'none';
@@ -74,7 +110,6 @@ export default {
     this.reset();
 
     this.start();
-    this.computer.answer(letters[new Date().getTime() % 25]);
   },
   startInterval: function() {
     var self = this;
