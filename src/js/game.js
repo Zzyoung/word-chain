@@ -128,7 +128,9 @@ export default {
     
     this.endModal.querySelector('.score').innerHTML = this.score;
     this.endModal.style.display = 'block';
-    utils.addClass(keyboard, 'hide');
+    if (utils.isMobileEnv()) {
+      utils.addClass(keyboard, 'hide');
+    }
   },
   playerWin: function () {
     this.timePause();

@@ -681,7 +681,9 @@ exports.default = {
 
     this.endModal.querySelector('.score').innerHTML = this.score;
     this.endModal.style.display = 'block';
-    _utils2.default.addClass(keyboard, 'hide');
+    if (_utils2.default.isMobileEnv()) {
+      _utils2.default.addClass(keyboard, 'hide');
+    }
   },
   playerWin: function playerWin() {
     this.timePause();
