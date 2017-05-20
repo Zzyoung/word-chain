@@ -672,7 +672,7 @@ exports.default = {
       self.timerDom.num.innerHTML = self.cycle;
       if (self.cycle === 0) {
         clearInterval(self.jsTimer);
-        // self.computerWin();
+        self.computerWin();
       }
     }, 1000);
   },
