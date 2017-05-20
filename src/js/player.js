@@ -9,6 +9,17 @@ var answerBtn = {
     answerBtn.onclick = function () {
       onClick();
     };
+
+    if (!utils.isMobileEnv()) {
+      window.addEventListener('keyup', function (e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+
+        if (keyCode === 13) {
+          onClick();
+        }
+      });
+    }
   } 
 };
 

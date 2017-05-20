@@ -144,6 +144,10 @@ exports.default = {
         self.scrollDown(dom, currentTime, duration);
       });
     }
+  },
+  isMobileEnv: function isMobileEnv() {
+    return (/iphone|android/.test(navigator.userAgent.toLowerCase())
+    );
   }
 };
 
@@ -668,7 +672,7 @@ exports.default = {
       self.timerDom.num.innerHTML = self.cycle;
       if (self.cycle === 0) {
         clearInterval(self.jsTimer);
-        self.computerWin();
+        // self.computerWin();
       }
     }, 1000);
   },
@@ -775,6 +779,17 @@ var answerBtn = {
     answerBtn.onclick = function () {
       onClick();
     };
+
+    if (!_utils2.default.isMobileEnv()) {
+      window.addEventListener('keyup', function (e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+
+        if (keyCode === 13) {
+          onClick();
+        }
+      });
+    }
   }
 };
 
@@ -992,12 +1007,56 @@ var _keyboard2 = _interopRequireDefault(_keyboard);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function convertCodeToKey(code) {
+  if (code === 8) {
+    return 'delete';
+  }
+  if (code === 13) {
+    return 'enter';
+  }
+  return String.fromCharCode(code).toLowerCase();
+}
+
 exports.default = {
   value: '',
+  onChange: null,
   init: function init(onChange) {
+    this.onChange = onChange;
+    var isMobile = _utils2.default.isMobileEnv();
+
+    if (isMobile) {
+      this.initMobileKeyboard();
+    } else {
+      this.initPcKeyboard();
+    }
+
+    this.highlighInput(isMobile);
+  },
+
+  initPcKeyboard: function initPcKeyboard() {
     var self = this;
-    var gamePage = document.querySelector('.game-page');
-    var answerWrapper = document.querySelector('#answer-wrapper');
+    window.addEventListener('keyup', function (e) {
+      // only handle when input focus
+      if (document.querySelector('#answer-wrapper').className.indexOf('focus') < 0) {
+        return;
+      }
+      e = e || window.event;
+      var keyCode = e.keyCode;
+      if (keyCode != 8 && (keyCode > 90 || keyCode < 65)) {
+        return;
+      }
+
+      var key = convertCodeToKey(keyCode);
+      if (key === 'delete') {
+        self.handleDelete();
+      } else {
+        self.handleKeyUpdate(key);
+      }
+    });
+  },
+
+  initMobileKeyboard: function initMobileKeyboard() {
+    var self = this;
     // create DOM
     var keyboard = document.createElement('div');
     keyboard.setAttribute('id', 'keyboard');
@@ -1006,37 +1065,52 @@ exports.default = {
     document.body.appendChild(keyboard);
 
     // bind event
-    keyboard.addEventListener('touchstart', function (e) {
+    keyboard.addEventListener('click', function (e) {
       e.preventDefault();
-      var button = e.target;
-      var answer = self.value;
+      var button = e.target || srcElement;
 
       if (_utils2.default.containClass(button, 'del')) {
-        if (answer.length === 1) {
-          return;
-        }
-
-        var newAnswer = answer.substr(0, answer.length - 1);
-        self.value = newAnswer;
-        onChange(newAnswer);
-        return;
+        self.handleDelete();
       }
 
       if (button.tagName.toLowerCase() === 'span') {
         var letter = button.innerHTML;
-
-        if (/^[a-z]{1}$/.test(letter)) {
-          var newAnswer = answer + letter;
-          self.value = newAnswer;
-          onChange(newAnswer);
-        }
+        self.handleKeyUpdate(letter);
       }
     }, false);
+  },
 
-    // click other place hide keyboard
-    // click #answer-wrapper show keyboard
-    gamePage.onclick = function (e) {
-      var target = e.target;
+  handleDelete: function handleDelete() {
+    var answer = this.value;
+
+    if (answer.length === 1) {
+      return;
+    }
+
+    var newAnswer = answer.substr(0, answer.length - 1);
+
+    this.value = newAnswer;
+    this.onChange(newAnswer);
+    return;
+  },
+
+  handleKeyUpdate: function handleKeyUpdate(key) {
+    var answer = this.value;
+
+    if (/^[a-z]{1}$/.test(key)) {
+      var newAnswer = answer + key;
+      this.value = newAnswer;
+      this.onChange(newAnswer);
+    }
+  },
+
+  highlighInput: function highlighInput(hasKeyboard) {
+    var gamePage = document.querySelector('.game-page');
+    var answerWrapper = document.querySelector('#answer-wrapper');
+    var callback = hasKeyboard ? function (e) {
+      // click other place hide keyboard
+      // click #answer-wrapper show keyboard
+      var target = e.target || srcElement;
 
       if (target.getAttribute('id') === 'answer-wrapper') {
         _utils2.default.addClass(answerWrapper, 'focus');
@@ -1047,10 +1121,21 @@ exports.default = {
         _utils2.default.removeClass(answerWrapper, 'focus');
         _utils2.default.addClass(keyboard, 'hide');
       }
+    } : function (e) {
+      var target = e.target || srcElement;
+
+      if (target.getAttribute('id') === 'answer-wrapper') {
+        _utils2.default.addClass(answerWrapper, 'focus');
+      } else if (target.getAttribute('id') === 'answer-btn') {
+        _utils2.default.addClass(answerWrapper, 'focus');
+      } else {
+        _utils2.default.removeClass(answerWrapper, 'focus');
+      }
     };
 
-    return keyboard;
+    gamePage.onclick = callback;
   },
+
   update: function update(value) {
     this.value = value;
   }
@@ -2983,7 +3068,7 @@ exports = module.exports = __webpack_require__(13)(undefined);
 
 
 // module
-exports.push([module.i, "\n* {\n  margin: 0;\n  padding: 0;\n}\n\nhtml {\n  width: 100%;\n  height: 100%;\n  -webkit-tap-highlight-color: transparent;\n}\n\nbody {\n  margin: 0 auto;\n  max-width: 480px;\n  min-height: 100%;\n  height:100%;\n  background-color: rgb(234, 244, 233);\n  font-family: \"Helvetica Neue\",Helvetica,Tahoma,Arial,\"PingFang SC\",STHeiti,\"Microsoft YaHei\",SimSun,Heiti,sans-serif;\n}\n.clearfix:after{\n  content: \".\";\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden\n}\n\n.start-page {\n  padding-top: 60px;\n  box-sizing: border-box;\n  min-width: 100%;\n  min-height: 100%;\n}\n\n.start-page header {\n  width: 150px;\n  margin: 0 auto;\n  text-align: center;\n}\n\n.start-page header img {\n  width: 48px;\n  height: auto;\n}\n\n.start-page header h1 {\n  margin-top: 12px;\n  font-size: 22px;\n  color: rgb(162, 184, 148);\n}\n\n.start-page .start {\n  display: block;\n  width: 52%;\n  height: 60px;\n  margin: 40% auto 24%;\n  font-size: 20px;\n  color: #fff;\n  background-color: rgb(177, 204, 149);\n  border: 2px solid rgb(168, 192, 144);\n  border-radius: 30px;\n  outline: none;\n}\n\n.start-page .rules {\n  position: relative;\n  width: 90%;\n  height:120px;\n  margin: 80px auto 0;\n  background-color: #fff;\n  border: 2px solid rgb(226, 233, 225);\n  border-radius: 10px;\n  box-shadow: 0 2px 12px 0 rgba(0,0,0,.08);\n}\n\n.start-page .rules h6 {\n  position: absolute;\n  left: 12px;\n  top: -10px;\n  width: 80px;\n  height:20px;\n  border:1px solid;\n  border-radius: 3px;\n  background-color: rgb(234, 244, 233);\n  text-align: center;\n  font-size: 14px;\n  line-height: 20px;\n  color:rgb(167, 183, 157);\n  font-weight: normal;\n}\n\n.start-page .rules ul {\n  position: absolute;\n  top: 50%;\n  left: 10%;\n  -webkit-transform: translateY(-50%);\n          transform: translateY(-50%);\n}\n\n.start-page .rules ul li {\n  margin-bottom: 6px;\n}\n\n.game-page {\n  box-sizing: border-box;\n  min-width: 100%;\n  min-height: 100%;\n  padding-top: 24px;\n}\n\n.game-page header {\n  position: relative;\n  width: 90%;\n  height: 40px;\n  padding-left: 18px;\n  background-color: rgb(214, 238, 190);\n  margin:0 auto;\n  border-radius: 20px;\n}\n\n.game-page .score {\n  position: absolute;\n  top:10px;\n  height: 20px;\n  line-height: 20px;\n  color:rgb(75, 177, 67);\n  font-weight: 900;\n  font-size: 22px;\n  padding-right: 10px;\n}\n\n.game-page .score::after {\n  content: '\\6210\\7EE9';\n  display: inline-block;\n  height: 17px;\n  font-size: 14px;\n  vertical-align: 1px;\n  font-weight: normal;\n  padding-left: 6px;\n  margin-left: 10px;\n  border-left: 1px solid;\n}\n\n.timer {\n  position: absolute;\n  right: 0;\n  top:0;\n}\n\n.timer-wrapper, .timer-wrapper *, .achter{\n  box-sizing: border-box;\n}\n.timer-wrapper {\n  top:0px;\n  right: 0px;\n  z-index: 1;\n  width: 40px;\n  height: 40px;\n  position: absolute;\n}\n.timer-wrapper .num {\n  position: absolute;\n  top:0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  margin: auto;\n  width:20px;\n  height: 20px;\n  font-size: 16px;\n  line-height: 20px;\n  text-align: center;\n  color:rgb(75, 177, 67);\n}\n.timer-wrapper .left {\n  width: 20px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  left: 0;\n  border:4px solid #fff;\n  border-right:none;\n  border-radius: 20px 0 0 20px;\n  z-index: 10;\n  opacity: 0;\n  -webkit-animation: fill 15s steps(1, end) 1;\n          animation: fill 15s steps(1, end) 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n.timer-wrapper .right {\n  width: 20px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  right: 0;\n  border:4px solid #fff;\n  border-left:none;\n  border-radius: 0 20px 20px 0;\n  z-index: 10;\n  opacity: 1;\n  -webkit-animation: mask 15s steps(1, end) 1;\n          animation: mask 15s steps(1, end) 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n.achter{\n  width: 40px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  right: 0;\n  border:4px solid rgb(94,181,84);\n  border-radius: 20px ;\n  z-index: 0;\n  opacity: 1;\n\n}\n.timer-wrapper .rotate {\n  width: 20px;\n  height: 40px;\n  position: absolute; \n  top: 0px;\n  right: 0px;\n  background: transparent;\n  border:4px solid rgb(94,181,84);\n  border-left:none;\n  border-radius: 0 20px 20px 0;\n  z-index: 20;\n  -webkit-transform-origin: 0 50%;\n          transform-origin: 0 50%;\n  -webkit-animation: rota 15s linear 1;\n          animation: rota 15s linear 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n\n.timer-wrapper.paused .left, .timer-wrapper.paused .right, .timer-wrapper.paused .rotate {\n  -webkit-animation-play-state: paused;\n          animation-play-state: paused;\n}\n.timer-wrapper.no-animation .left, .timer-wrapper.no-animation .right, .timer-wrapper.no-animation .rotate {\n  -webkit-animation-name: initial;\n          animation-name: initial;\n}\n@-webkit-keyframes rota {\n  0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }\n  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\n}\n@keyframes rota {\n  0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }\n  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\n}\n@-webkit-keyframes fill {\n  0%        { opacity: 0; }\n  50%, 100% { opacity: 1; }\n}\n@keyframes fill {\n  0%        { opacity: 0; }\n  50%, 100% { opacity: 1; }\n}\n@-webkit-keyframes mask {\n  0%        { z-index: 10; }\n  50%, 100% { z-index: 30; }\n}\n@keyframes mask {\n  0%        { z-index: 10; }\n  50%, 100% { z-index: 30; }\n}\n@-webkit-keyframes scaleIn {\n  0%        {-webkit-transform: scale(0);transform: scale(0);}\n  100%      {-webkit-transform: scale(1);transform: scale(1);}\n}\n@keyframes scaleIn {\n  0%        {-webkit-transform: scale(0);transform: scale(0);}\n  100%      {-webkit-transform: scale(1);transform: scale(1);}\n}\n.game-page .main {\n  position: relative;\n  margin-top: 30px;\n  width: 100%;\n  height: 180px;\n  overflow: scroll;\n}\n\n.game-page #word-chain {\n  width: 100%;\n  list-style-type: none;\n}\n\n.game-page #word-chain li {\n  width: 100%;\n  text-align: center;\n  -webkit-animation: scaleIn .3s linear 1;\n          animation: scaleIn .3s linear 1;\n}\n.game-page #word-chain li:nth-child(2n) span, .game-page #word-chain li:nth-child(2n) .pass{\n  background-color: #fff;\n}\n.game-page #word-chain li:nth-child(2n-1) span, .game-page #word-chain li:nth-child(2n-1) .pass{\n  background-color: rgb(247, 254, 236);\n}\n.game-page #word-chain li span {\n  display: inline-block;\n  padding: 10px 30px;\n  height: 20px;\n  line-height: 20px;\n  border-radius: 20px;\n  font-size: 20px;\n  font-weight: bold;\n  letter-spacing: 0.5px;\n  color: rgb(147, 147, 147);\n}\n.game-page #word-chain li span em {\n  font-style: normal;\n  color:rgb(105, 108, 99);\n}\n.game-page #word-chain li .pass {\n  position: relative;\n  height: 20px;\n  width: 40px;\n  margin: 0 auto;\n}\n.game-page #word-chain li .pass:before {\n  content:'';\n  position: absolute;\n  left: 0;\n  top: 0;\n  width: 18px;\n  height: 20px;\n  border-top-right-radius: 10px;\n  background-color: rgb(234, 244, 233);\n}\n.game-page #word-chain li .pass:after {\n  content:'';\n  position: absolute;\n  right: 0;\n  top: 0;\n  width: 18px;\n  height: 20px;\n  border-top-left-radius: 10px;\n  background-color: rgb(234, 244, 233);\n}\n.game-page #word-chain li:last-child .pass {\n  display: none;\n}\n.game-page #word-chain li:last-child span em {\n  color:rgb(75, 177, 67);\n}\n.game-page #word-chain li span:first-letter {\n  color:rgb(105, 108, 99);\n}\n\n.game-page .input-wrapper {\n  position: relative;\n  width: 100%;\n  margin-top: 12px;\n}\n\n#answer-wrapper {\n  box-sizing: border-box;\n  width: 62.5%;\n  height: 36px;\n  margin: 0 auto;\n  outline: none;\n  border-radius: 18px;\n  border:none;\n  text-align: center;\n  font-weight: bold;\n  font-size: 16px;\n  line-height: 36px;\n  background-color: #fff;\n}\n\n#answer-input {\n  padding: 0 3px;\n  letter-spacing: 0.3px;\n  color: rgb(75, 177, 67);\n  border-right: 2px solid transparent;\n}\n\n#answer-wrapper.focus {\n  border: 1px solid rgb(75, 177, 67);\n  line-height: 34px;\n  box-shadow: 0 2px 12px 0 rgba(0,0,0,.08);\n}\n\n#answer-wrapper.focus #answer-input {\n  -webkit-animation: blink 1s infinite steps(1, start);\n          animation: blink 1s infinite steps(1, start);\n}\n\n.game-page .input-wrapper .arrow {\n  position: absolute;\n  right: 5%;\n  top: 0;\n  box-sizing: border-box;\n  width: 36px;\n  height: 36px;\n  color: rgb(75, 177, 67);\n  border: 2px solid rgb(209, 221, 199);\n  border-radius: 12px;\n  text-align: center;\n  line-height: 28px;\n  outline: none;\n}\n\n.game-page footer {\n  position: fixed;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 80px;\n  padding: 10px 0 0 30px;\n  border-top: 2px solid rgb(220, 230, 219);\n  background-color: rgb(242, 248, 238);\n  color: rgb(157, 170, 140);\n}\n\n.end-modal {\n  position: fixed;\n}\n\n.modal-header {\n  width: 100%;\n  text-align: center;\n  font-size: 30px;\n  font-weight: bold;\n  color:rgb(159, 184, 138);\n}\n\n.modal-content {\n  position: fixed;\n  left: 0;\n  right: 0;\n  top:24%;\n  margin: 0 auto;\n  padding: 30px 0 20px;\n  width: 90%;\n  background-color: #fff;\n  text-align: center;\n  z-index: 2;\n  border-radius: 5px;\n  color:rgb(159, 184, 138);\n}\n\n.modal-content .score {\n  font-size: 40px;\n  font-weight: bold;\n  margin-top: 12px;\n}\n\n.modal-content #restart {\n  margin-top: 30px;\n  width: 36%;\n  height: 30px;\n  line-height: 30px;\n  color: #fff;\n  outline: none;\n  border: none;\n  border-radius: 15px;\n  background-color: rgb(159, 184, 138);\n}\n\n.end-modal:before {\n  position: fixed;\n  content: '';\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  z-index: 1;\n  background-color: rgba(0,0,0,.12);\n}\n\n.game-page #error-msg {\n  margin-top: 20px;\n  height: 20px;\n  line-height: 20px;\n  color: red;\n  text-align: center;\n  visibility: hidden;\n}\n\n#keyboard {\n  position: fixed;\n  box-sizing: border-box;\n  bottom:0;\n  left:0;\n  height:180px;\n  width:100%;\n  padding-top: 20px;\n  background-color: rgb(226, 239, 222);\n  -webkit-transform: translateY(0);\n          transform: translateY(0);\n  -webkit-transition: -webkit-transform .2s linear;\n  transition: -webkit-transform .2s linear;\n  transition: transform .2s linear;\n  transition: transform .2s linear, -webkit-transform .2s linear;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-user-select: none;\n  -moz-user-focus: none;\n  -moz-user-select: none;\n  -webkit-appearance:none;\n  outline: none;\n  border: none;\n}\n#keyboard.hide {\n  -webkit-transform: translateY(100%);\n          transform: translateY(100%);\n}\n#keyboard span{\n  float: left;\n  box-sizing: border-box;\n  width: 9%;\n  height: 38px;\n  margin-bottom: 9px;\n  margin-right: 1%;\n  line-height: 34px;\n  text-align: center;\n  border: 1px solid rgb(174,174,174);\n  border-radius: 5px;\n  font-size: 20px;\n  box-shadow: 0 2px 2px 0 rgba(0,0,0,.18);\n  background-color: #fff;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-user-select: none;\n  -webkit-touch-callout:none;\n  -moz-user-focus: none;\n  -moz-user-select: none;\n  -webkit-appearance:none;\n  outline: none;\n  border: none;\n}\n\n#keyboard span:first-child {\n  margin-left: 0.5%;\n}\n\n#keyboard span:last-child {\n  margin-right: 0.5%;\n}\n\n#keyboard .del {\n  width: 18%;\n}\n\n#keyboard .second-line span:first-child, #keyboard .third-line span:first-child {\n  margin-left: 6%;\n}\n\n@-webkit-keyframes blink {\n    0%, 100% {\n        border-right: 2px solid #000;\n    }\n    50% {\n        border-right: 2px solid transparent;\n    }\n}\n\n@keyframes blink {\n    0%, 100% {\n        border-right: 2px solid #000;\n    }\n    50% {\n        border-right: 2px solid transparent;\n    }\n}\n\n\n\n", ""]);
+exports.push([module.i, "\n* {\n  margin: 0;\n  padding: 0;\n}\n\nhtml {\n  width: 100%;\n  height: 100%;\n  max-width: 480px;\n  margin: 0 auto;\n  -webkit-tap-highlight-color: transparent;\n}\n\nbody {\n  margin: 0 auto;\n  max-width: 480px;\n  min-height: 100%;\n  height:100%;\n  background-color: rgb(234, 244, 233);\n  font-family: \"Helvetica Neue\",Helvetica,Tahoma,Arial,\"PingFang SC\",STHeiti,\"Microsoft YaHei\",SimSun,Heiti,sans-serif;\n}\n.clearfix:after{\n  content: \".\";\n  display: block;\n  height: 0;\n  clear: both;\n  visibility: hidden\n}\n\n.start-page {\n  padding-top: 60px;\n  box-sizing: border-box;\n  min-width: 100%;\n  min-height: 100%;\n}\n\n.start-page header {\n  width: 150px;\n  margin: 0 auto;\n  text-align: center;\n}\n\n.start-page header img {\n  width: 48px;\n  height: auto;\n}\n\n.start-page header h1 {\n  margin-top: 12px;\n  font-size: 22px;\n  color: rgb(162, 184, 148);\n}\n\n.start-page .start {\n  display: block;\n  width: 52%;\n  height: 60px;\n  margin: 40% auto 24%;\n  font-size: 20px;\n  color: #fff;\n  background-color: rgb(177, 204, 149);\n  border: 2px solid rgb(168, 192, 144);\n  border-radius: 30px;\n  outline: none;\n}\n\n.start-page .rules {\n  position: relative;\n  width: 90%;\n  height:120px;\n  margin: 80px auto 0;\n  background-color: #fff;\n  border: 2px solid rgb(226, 233, 225);\n  border-radius: 10px;\n  box-shadow: 0 2px 12px 0 rgba(0,0,0,.08);\n}\n\n.start-page .rules h6 {\n  position: absolute;\n  left: 12px;\n  top: -10px;\n  width: 80px;\n  height:20px;\n  border:1px solid;\n  border-radius: 3px;\n  background-color: rgb(234, 244, 233);\n  text-align: center;\n  font-size: 14px;\n  line-height: 20px;\n  color:rgb(167, 183, 157);\n  font-weight: normal;\n}\n\n.start-page .rules ul {\n  position: absolute;\n  top: 50%;\n  left: 10%;\n  -webkit-transform: translateY(-50%);\n          transform: translateY(-50%);\n}\n\n.start-page .rules ul li {\n  margin-bottom: 6px;\n}\n\n.game-page {\n  box-sizing: border-box;\n  min-width: 100%;\n  min-height: 100%;\n  padding-top: 24px;\n}\n\n.game-page header {\n  position: relative;\n  width: 90%;\n  height: 40px;\n  padding-left: 18px;\n  background-color: rgb(214, 238, 190);\n  margin:0 auto;\n  border-radius: 20px;\n}\n\n.game-page .score {\n  position: absolute;\n  top:10px;\n  height: 20px;\n  line-height: 20px;\n  color:rgb(75, 177, 67);\n  font-weight: 900;\n  font-size: 22px;\n  padding-right: 10px;\n}\n\n.game-page .score::after {\n  content: '\\6210\\7EE9';\n  display: inline-block;\n  height: 17px;\n  font-size: 14px;\n  vertical-align: 1px;\n  font-weight: normal;\n  padding-left: 6px;\n  margin-left: 10px;\n  border-left: 1px solid;\n}\n\n.timer {\n  position: absolute;\n  right: 0;\n  top:0;\n}\n\n.timer-wrapper, .timer-wrapper *, .achter{\n  box-sizing: border-box;\n}\n.timer-wrapper {\n  top:0px;\n  right: 0px;\n  z-index: 1;\n  width: 40px;\n  height: 40px;\n  position: absolute;\n}\n.timer-wrapper .num {\n  position: absolute;\n  top:0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  margin: auto;\n  width:20px;\n  height: 20px;\n  font-size: 16px;\n  line-height: 20px;\n  text-align: center;\n  color:rgb(75, 177, 67);\n}\n.timer-wrapper .left {\n  width: 20px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  left: 0;\n  border:4px solid #fff;\n  border-right:none;\n  border-radius: 20px 0 0 20px;\n  z-index: 10;\n  opacity: 0;\n  -webkit-animation: fill 15s steps(1, end) 1;\n          animation: fill 15s steps(1, end) 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n.timer-wrapper .right {\n  width: 20px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  right: 0;\n  border:4px solid #fff;\n  border-left:none;\n  border-radius: 0 20px 20px 0;\n  z-index: 10;\n  opacity: 1;\n  -webkit-animation: mask 15s steps(1, end) 1;\n          animation: mask 15s steps(1, end) 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n.achter{\n  width: 40px;\n  height: 40px;\n  position: absolute;\n  top: 0;\n  right: 0;\n  border:4px solid rgb(94,181,84);\n  border-radius: 20px ;\n  z-index: 0;\n  opacity: 1;\n\n}\n.timer-wrapper .rotate {\n  width: 20px;\n  height: 40px;\n  position: absolute; \n  top: 0px;\n  right: 0px;\n  background: transparent;\n  border:4px solid rgb(94,181,84);\n  border-left:none;\n  border-radius: 0 20px 20px 0;\n  z-index: 20;\n  -webkit-transform-origin: 0 50%;\n          transform-origin: 0 50%;\n  -webkit-animation: rota 15s linear 1;\n          animation: rota 15s linear 1;\n  -webkit-animation-fill-mode: forwards;\n          animation-fill-mode: forwards;\n}\n\n.timer-wrapper.paused .left, .timer-wrapper.paused .right, .timer-wrapper.paused .rotate {\n  -webkit-animation-play-state: paused;\n          animation-play-state: paused;\n}\n.timer-wrapper.no-animation .left, .timer-wrapper.no-animation .right, .timer-wrapper.no-animation .rotate {\n  -webkit-animation-name: initial;\n          animation-name: initial;\n}\n@-webkit-keyframes rota {\n  0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }\n  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\n}\n@keyframes rota {\n  0%   { -webkit-transform: rotate(0deg); transform: rotate(0deg); }\n  100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }\n}\n@-webkit-keyframes fill {\n  0%        { opacity: 0; }\n  50%, 100% { opacity: 1; }\n}\n@keyframes fill {\n  0%        { opacity: 0; }\n  50%, 100% { opacity: 1; }\n}\n@-webkit-keyframes mask {\n  0%        { z-index: 10; }\n  50%, 100% { z-index: 30; }\n}\n@keyframes mask {\n  0%        { z-index: 10; }\n  50%, 100% { z-index: 30; }\n}\n@-webkit-keyframes scaleIn {\n  0%        {-webkit-transform: scale(0);transform: scale(0);}\n  100%      {-webkit-transform: scale(1);transform: scale(1);}\n}\n@keyframes scaleIn {\n  0%        {-webkit-transform: scale(0);transform: scale(0);}\n  100%      {-webkit-transform: scale(1);transform: scale(1);}\n}\n.game-page .main {\n  position: relative;\n  margin-top: 30px;\n  width: 100%;\n  height: 180px;\n  overflow: scroll;\n}\n\n.game-page #word-chain {\n  width: 100%;\n  list-style-type: none;\n}\n\n.game-page #word-chain li {\n  width: 100%;\n  text-align: center;\n  -webkit-animation: scaleIn .3s linear 1;\n          animation: scaleIn .3s linear 1;\n}\n.game-page #word-chain li:nth-child(2n) span, .game-page #word-chain li:nth-child(2n) .pass{\n  background-color: #fff;\n}\n.game-page #word-chain li:nth-child(2n-1) span, .game-page #word-chain li:nth-child(2n-1) .pass{\n  background-color: rgb(247, 254, 236);\n}\n.game-page #word-chain li span {\n  display: inline-block;\n  padding: 10px 30px;\n  height: 20px;\n  line-height: 20px;\n  border-radius: 20px;\n  font-size: 20px;\n  font-weight: bold;\n  letter-spacing: 0.5px;\n  color: rgb(147, 147, 147);\n}\n.game-page #word-chain li span em {\n  font-style: normal;\n  color:rgb(105, 108, 99);\n}\n.game-page #word-chain li .pass {\n  position: relative;\n  height: 20px;\n  width: 40px;\n  margin: 0 auto;\n}\n.game-page #word-chain li .pass:before {\n  content:'';\n  position: absolute;\n  left: 0;\n  top: 0;\n  width: 18px;\n  height: 20px;\n  border-top-right-radius: 10px;\n  background-color: rgb(234, 244, 233);\n}\n.game-page #word-chain li .pass:after {\n  content:'';\n  position: absolute;\n  right: 0;\n  top: 0;\n  width: 18px;\n  height: 20px;\n  border-top-left-radius: 10px;\n  background-color: rgb(234, 244, 233);\n}\n.game-page #word-chain li:last-child .pass {\n  display: none;\n}\n.game-page #word-chain li:last-child span em {\n  color:rgb(75, 177, 67);\n}\n.game-page #word-chain li span:first-letter {\n  color:rgb(105, 108, 99);\n}\n\n.game-page .input-wrapper {\n  position: relative;\n  width: 100%;\n  margin-top: 12px;\n}\n\n#answer-wrapper {\n  box-sizing: border-box;\n  width: 62.5%;\n  height: 36px;\n  margin: 0 auto;\n  outline: none;\n  border-radius: 18px;\n  border:none;\n  text-align: center;\n  font-weight: bold;\n  font-size: 16px;\n  line-height: 36px;\n  background-color: #fff;\n}\n\n#answer-input {\n  padding: 0 3px;\n  letter-spacing: 0.3px;\n  color: rgb(75, 177, 67);\n  border-right: 2px solid transparent;\n}\n\n#answer-wrapper.focus {\n  border: 1px solid rgb(75, 177, 67);\n  line-height: 34px;\n  box-shadow: 0 2px 12px 0 rgba(0,0,0,.08);\n}\n\n#answer-wrapper.focus #answer-input {\n  -webkit-animation: blink 1s infinite steps(1, start);\n          animation: blink 1s infinite steps(1, start);\n}\n\n.game-page .input-wrapper .arrow {\n  position: absolute;\n  right: 5%;\n  top: 0;\n  box-sizing: border-box;\n  width: 36px;\n  height: 36px;\n  color: rgb(75, 177, 67);\n  border: 2px solid rgb(209, 221, 199);\n  border-radius: 12px;\n  text-align: center;\n  line-height: 28px;\n  outline: none;\n}\n\n.game-page footer {\n  position: fixed;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 80px;\n  padding: 10px 0 0 30px;\n  border-top: 2px solid rgb(220, 230, 219);\n  background-color: rgb(242, 248, 238);\n  color: rgb(157, 170, 140);\n}\n\n.end-modal {\n  position: fixed;\n}\n\n.modal-header {\n  width: 100%;\n  text-align: center;\n  font-size: 30px;\n  font-weight: bold;\n  color:rgb(159, 184, 138);\n}\n\n.modal-content {\n  position: fixed;\n  left: 0;\n  right: 0;\n  top:24%;\n  margin: 0 auto;\n  padding: 30px 0 20px;\n  width: 90%;\n  max-width: 432px;\n  background-color: #fff;\n  text-align: center;\n  z-index: 2;\n  border-radius: 5px;\n  color:rgb(159, 184, 138);\n}\n\n.modal-content .score {\n  font-size: 40px;\n  font-weight: bold;\n  margin-top: 12px;\n}\n\n.modal-content #restart {\n  margin-top: 30px;\n  width: 36%;\n  height: 30px;\n  line-height: 30px;\n  color: #fff;\n  outline: none;\n  border: none;\n  border-radius: 15px;\n  background-color: rgb(159, 184, 138);\n}\n\n.end-modal:before {\n  position: fixed;\n  content: '';\n  top: 0;\n  left: 0;\n  right: 0;\n  bottom: 0;\n  z-index: 1;\n  background-color: rgba(0,0,0,.12);\n}\n\n.game-page #error-msg {\n  margin-top: 20px;\n  height: 20px;\n  line-height: 20px;\n  color: red;\n  text-align: center;\n  visibility: hidden;\n}\n\n#keyboard {\n  position: fixed;\n  box-sizing: border-box;\n  bottom:0;\n  left:0;\n  height:180px;\n  width:100%;\n  padding-top: 20px;\n  background-color: rgb(226, 239, 222);\n  -webkit-transform: translateY(0);\n          transform: translateY(0);\n  -webkit-transition: -webkit-transform .2s linear;\n  transition: -webkit-transform .2s linear;\n  transition: transform .2s linear;\n  transition: transform .2s linear, -webkit-transform .2s linear;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-user-select: none;\n  -moz-user-focus: none;\n  -moz-user-select: none;\n  -webkit-appearance:none;\n  outline: none;\n  border: none;\n}\n#keyboard.hide {\n  -webkit-transform: translateY(100%);\n          transform: translateY(100%);\n}\n#keyboard span{\n  float: left;\n  box-sizing: border-box;\n  width: 9%;\n  height: 38px;\n  margin-bottom: 9px;\n  margin-right: 1%;\n  line-height: 34px;\n  text-align: center;\n  border: 1px solid rgb(174,174,174);\n  border-radius: 5px;\n  font-size: 20px;\n  box-shadow: 0 2px 2px 0 rgba(0,0,0,.18);\n  background-color: #fff;\n  -webkit-tap-highlight-color: transparent;\n  -webkit-user-select: none;\n  -webkit-touch-callout:none;\n  -moz-user-focus: none;\n  -moz-user-select: none;\n  -webkit-appearance:none;\n  outline: none;\n  border: none;\n}\n\n#keyboard span:first-child {\n  margin-left: 0.5%;\n}\n\n#keyboard span:last-child {\n  margin-right: 0.5%;\n}\n\n#keyboard .del {\n  width: 18%;\n}\n\n#keyboard .second-line span:first-child, #keyboard .third-line span:first-child {\n  margin-left: 6%;\n}\n\n@-webkit-keyframes blink {\n    0%, 100% {\n        border-right: 2px solid #000;\n    }\n    50% {\n        border-right: 2px solid transparent;\n    }\n}\n\n@keyframes blink {\n    0%, 100% {\n        border-right: 2px solid #000;\n    }\n    50% {\n        border-right: 2px solid transparent;\n    }\n}\n\n\n\n", ""]);
 
 // exports
 

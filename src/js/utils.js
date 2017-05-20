@@ -69,5 +69,8 @@ export default {
         self.scrollDown(dom, currentTime, duration);
       });
     }
+  },
+  isMobileEnv: function () {
+    return /iphone|android/.test(navigator.userAgent.toLowerCase());
   }
 }
